@@ -1,25 +1,30 @@
- FROM node:22.12 as builder
+FROM node:22.12 as builder
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y g++ make python3
 
+# Copy root files
 COPY package.json .
 COPY yarn.lock .
 COPY tsconfig.json .
 COPY .prettierrc .
 COPY .eslintrc .
 
-COPY /packages/imap-mail-watcher/src ./packages/imap-mail-watcher/src
+# Copy workspace package manifests and sources BEFORE running yarn install so workspace deps are resolvable
 COPY /packages/imap-mail-watcher/package.json ./packages/imap-mail-watcher/package.json
 COPY /packages/imap-mail-watcher/tsconfig.json ./packages/imap-mail-watcher/tsconfig.json
+COPY /packages/imap-mail-watcher/src ./packages/imap-mail-watcher/src
 COPY /packages/utils/package.json ./packages/utils/package.json
+COPY /packages/utils ./packages/utils
 
+# Install dependencies (will hoist workspace deps into /app/node_modules)
 RUN yarn install --pure-lockfile --network-timeout=300000
 
+# Ensure Node type definitions are available for tsc
+RUN yarn add -D -W @types/node@latest --exact
 
-ADD /packages/utils ./packages/utils
-
+# Build workspaces
 RUN yarn workspace @omnivore/utils build
 RUN yarn workspace @omnivore/imap-mail-watcher build
 

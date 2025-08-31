@@ -17,6 +17,11 @@ services:
       - pgdata:/var/lib/postgresql/data
     env_file:
       - .env
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: '1G'
 
   migrate:
     image: "ghcr.io/omnivore-app/sh-migrate:latest"
@@ -43,6 +48,11 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: '512M'
 
   queue-processor:
     image: "ghcr.io/omnivore-app/sh-queue-processor:latest"
@@ -52,6 +62,11 @@ services:
     depends_on:
       api:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: '512M'
 
   web:
     image: "ghcr.io/omnivore-app/sh-web:latest"
@@ -63,6 +78,11 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '256M'
 
   image-proxy:
     image: "ghcr.io/omnivore-app/sh-image-proxy:latest"
@@ -71,6 +91,11 @@ services:
       - "7070:8080"
     env_file:
       - .env
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '256M'
 
   content-fetch:
     image: "ghcr.io/omnivore-app/sh-content-fetch:latest"
@@ -86,6 +111,11 @@ services:
         condition: service_healthy
       api:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0' # This service runs a headless browser and can be resource-intensive.
+          memory: '1G'
 
   redis:
     image: "redis:7.2.4"
@@ -98,6 +128,11 @@ services:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
     volumes:
       - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '256M'
 
   minio:
     image: minio/minio
@@ -116,6 +151,11 @@ services:
     command: server /data
     volumes:
       - minio_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: '512M'
 
   createbuckets:
     image: minio/mc
@@ -145,8 +185,27 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: '128M'
 volumes:
   pgdata:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Volumes/Data/SelfHostedData/omnivore/pgdata
   redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Volumes/Data/SelfHostedData/omnivore/redis
   minio_data:
-
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Volumes/Data/SelfHostedData/omnivore/minio

@@ -5,4 +5,4 @@ services:
       dockerfile: ./packages/imap-mail-watcher/Dockerfile
     container_name: "omnivore-imap-watch"
     env_file:
-      - .env.imap
+      - .env
